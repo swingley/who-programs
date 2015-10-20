@@ -2,26 +2,6 @@ var programs, highlight;
 var map = L.map('map').setView([30, 0], 2);
 L.esri.basemapLayer("Gray").addTo(map);
 
-// Display feature info.
-var info = L.control();
-info.onAdd = function() {
-  this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
-  this.update();
-  return this._div;
-};
-// method that we will use to update the control based on feature properties passed
-info.update = function(props) {
-  var programInfo = '';
-  if ( props && props.hasOwnProperty('CNTRY_TERR') && props.hasOwnProperty('Extra_Info') ) {
-    programInfo = '<h4>WHO Programs:  ' + props.CNTRY_TERR + '</h4>';
-    programInfo += '<b>' + props.Extra_Info+ '</b><br>';
-  } else {
-    programInfo = '<h4>WHO Programs:</h4>Hover over a country.';
-  }
-  this._div.innerHTML = programInfo;
-};
-info.addTo(map);
-
 // Styling info.
 var colors = [
   { 'hex': '#19375C' },
@@ -50,7 +30,6 @@ function style(feature) {
 function resetHighlight() {
   if ( highlight ) {
     programs.resetStyle(highlight);
-    info.update();
   }
 }
 function highlightFeature(e) {
@@ -65,14 +44,25 @@ function highlightFeature(e) {
   if (!L.Browser.ie && !L.Browser.opera) {
     layer.bringToFront();
   }
-  info.update(layer.feature.properties);
   highlight = e.target;
 }
 
+// Display feature info.
+function buildInfo(props) {
+  var programInfo = '';
+  if ( props && props.hasOwnProperty('CNTRY_TERR') && props.hasOwnProperty('Extra_Info') ) {
+    programInfo = '<h4>WHO Programs:  ' + props.CNTRY_TERR + '</h4>';
+    programInfo += '<b>' + props.Extra_Info+ '</b><br>';
+  } else {
+    programInfo = '<h4>WHO Programs:</h4>Hover over a country.';
+  }
+  return programInfo;
+}
 function onEachFeature(feature, layer) {
   layer.on({
     click: highlightFeature
   });
+  layer.bindPopup(buildInfo(feature.properties));
 }
 
 // Legend
@@ -96,8 +86,7 @@ L.TopoJSON = L.GeoJSON.extend({
         var geojson = topojson.feature(jsonData, jsonData.objects[key]);
         L.GeoJSON.prototype.addData.call(this, geojson);
       }
-    }    
-    else {
+    } else {
       L.GeoJSON.prototype.addData.call(this, jsonData);
     }
   }  
