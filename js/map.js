@@ -68,7 +68,7 @@ function onEachFeature(feature, layer) {
 // Legend
 var legend = L.control({ position: 'bottomright' });
 legend.onAdd = function() {
-  var div = L.DomUtil.create('div', 'info legend');
+  var div = L.DomUtil.create('div', 'legend');
   div.innerHTML += "Count<br>";
   var counts = [1, 2, 3, 4, 5];
   for (var i = 0; i < counts.length; i++) {
