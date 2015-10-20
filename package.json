@@ -1,0 +1,17 @@
+{
+  "name": "who-programs",
+  "version": "1.0.0",
+  "description": "Map of WHO programs.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Derek Swingley",
+  "license": "ISC",
+  "dependencies": {
+    "esri-leaflet": "^1.0.0",
+    "leaflet": "^0.7.5",
+    "topojson": "^1.6.19",
+    "whatwg-fetch": "^0.10.0"
+  }
+}
