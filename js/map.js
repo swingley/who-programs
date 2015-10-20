@@ -1,4 +1,4 @@
-var programs;
+var programs, highlight;
 var map = L.map('map').setView([30, 0], 2);
 L.esri.basemapLayer("Gray").addTo(map);
 
@@ -47,37 +47,31 @@ function style(feature) {
 }
 
 // Feature interaction.
+function resetHighlight() {
+  if ( highlight ) {
+    programs.resetStyle(highlight);
+    info.update();
+  }
+}
 function highlightFeature(e) {
+  resetHighlight();
   var layer = e.target;
-
   layer.setStyle({
     weight: 2,
     color: '#666',
     dashArray: '',
     fillOpacity: 0.7
   });
-
   if (!L.Browser.ie && !L.Browser.opera) {
     layer.bringToFront();
   }
-
   info.update(layer.feature.properties);
-}
-
-function resetHighlight(e) {
-  programs.resetStyle(e.target);
-  info.update();
-}
-
-function zoomToFeature(e) {
-  map.fitBounds(e.target.getBounds());
+  highlight = e.target;
 }
 
 function onEachFeature(feature, layer) {
   layer.on({
-    mouseover: highlightFeature,
-    mouseout: resetHighlight,
-    click: zoomToFeature
+    click: highlightFeature
   });
 }
 
@@ -92,7 +86,6 @@ legend.onAdd = function() {
   }
   return div;
 };
-
 legend.addTo(map);
 
 // https://gist.github.com/rclark/5779673/
@@ -112,7 +105,6 @@ L.TopoJSON = L.GeoJSON.extend({
 
 function showPrograms(json) {
   json.objects.Export_Output.geometries.forEach(function(f) {
-    // console.log('info', f.properties.Extra_Info);
     f.properties.program_count = f.properties.Extra_Info.split('<br>').filter(function(d) { return d; }).length;
     console.log('program count', f.properties.program_count);
   });
