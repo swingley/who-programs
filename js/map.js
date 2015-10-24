@@ -1,6 +1,6 @@
 var programs, highlight;
 var map = L.map('map').setView([30, 0], 2);
-L.esri.basemapLayer("Gray").addTo(map);
+L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
 
 // Styling info.
 var colors = [
@@ -37,7 +37,7 @@ function highlightFeature(e) {
   var layer = e.target;
   layer.setStyle({
     weight: 2,
-    color: '#666',
+    color: '#fff',
     dashArray: '',
     fillOpacity: 0.7
   });
@@ -52,7 +52,7 @@ function buildInfo(props) {
   var programInfo = '';
   if ( props && props.hasOwnProperty('CNTRY_TERR') && props.hasOwnProperty('Extra_Info') ) {
     programInfo = '<h4>WHO Programs:  ' + props.CNTRY_TERR + '</h4>';
-    programInfo += '<b>' + props.Extra_Info+ '</b><br>';
+    programInfo += props.Extra_Info;
   } else {
     programInfo = '<h4>WHO Programs:</h4>Hover over a country.';
   }
@@ -66,17 +66,31 @@ function onEachFeature(feature, layer) {
 }
 
 // Legend
-var legend = L.control({ position: 'bottomright' });
-legend.onAdd = function() {
-  var div = L.DomUtil.create('div', 'legend');
-  div.innerHTML += "Count<br>";
-  var counts = [1, 2, 3, 4, 5];
-  for (var i = 0; i < counts.length; i++) {
-    div.innerHTML += '<i style="background:' + getColor(counts[i]) + '"></i> ' + counts[i] + '<br>';
-  }
-  return div;
-};
-legend.addTo(map);
+function createLegend(programs) {
+  var legend = L.control({ position: 'bottomright' });
+  legend.onAdd = function() {
+    var div = L.DomUtil.create('div', 'legend');
+    div.innerHTML = '<div class="heading">Program Count by Country</div>';
+    var counts = [1, 2, 3, 4, 5];
+    // Create swatches.
+    for (var i = 0; i < counts.length; i++) {
+      div.innerHTML += '<i style="background:' + getColor(counts[i]) + '"></i>';
+    }
+    // Add swatch labels.
+    var labels = L.DomUtil.create('div', 'swatch-labels', div);
+    for (var j = 0; j < counts.length; j++) {
+      labels.innerHTML += '<span>' + (j+1) + '</span>';
+    }
+    // Add programs
+    var filters = L.DomUtil.create('div', 'filters', div);
+    filters.innerHTML = '<div class="heading">Show Countries with:</div>';
+    for ( var k = 0; k < programs.length; k++ ) {
+      filters.innerHTML += '<div>' + programs[k] + '</div';
+    }
+    return div;
+  };
+  legend.addTo(map);
+}
 
 // https://gist.github.com/rclark/5779673/
 L.TopoJSON = L.GeoJSON.extend({
@@ -93,15 +107,25 @@ L.TopoJSON = L.GeoJSON.extend({
 });
 
 function showPrograms(json) {
+  var programsList = [];
   json.objects.Export_Output.geometries.forEach(function(f) {
     f.properties.program_count = f.properties.Extra_Info.split('<br>').filter(function(d) { return d; }).length;
-    console.log('program count', f.properties.program_count);
+    // console.log('program count', f.properties.program_count);
+
+    var p = f.properties.Extra_Info.split('<br>').map(function(s) { return s.trim(); });
+    p.forEach(function(pr) {
+      if ( pr && pr.indexOf("Adviser") === -1 && programsList.indexOf(pr) === -1 ) {
+        programsList.push(pr);
+      }
+    });
   });
+  console.log('programsList', programsList);
   programs = new L.TopoJSON(json, {
     onEachFeature: onEachFeature, 
     style: style
   }).addTo(map);
-  console.log('programs', programs);
+  // console.log('programs', programs);
+  createLegend(programsList);
 }
 
 // Get country data, add it to the map.
