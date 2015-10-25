@@ -1,4 +1,4 @@
-var programs, highlight;
+var programs, programLookup = {}, highlight;
 var map = L.map('map').setView([30, 0], 2);
 L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
 
@@ -66,7 +66,7 @@ function onEachFeature(feature, layer) {
 }
 
 // Legend
-function createLegend(programs) {
+function createLegend(info) {
   var legend = L.control({ position: 'bottomright' });
   legend.onAdd = function() {
     var div = L.DomUtil.create('div', 'legend');
@@ -84,9 +84,25 @@ function createLegend(programs) {
     // Add programs
     var filters = L.DomUtil.create('div', 'filters', div);
     filters.innerHTML = '<div class="heading">Show Countries with:</div>';
-    for ( var k = 0; k < programs.length; k++ ) {
-      filters.innerHTML += '<div>' + programs[k] + '</div';
+    for ( var k = 0; k < info.length; k++ ) {
+      filters.innerHTML += '<div class="program">' +
+        '<input type="checkbox" checked="checked" id="program' + k + 
+        '"><label class="program" for="program' + k + '">' + info[k] + '</label></div';
     }
+    filters.addEventListener('click', function(e) {
+      if ( e.target.id ) {
+        programs.getLayers().forEach(function(l) {
+          var clicked = programLookup[e.target.id];
+          if ( l.feature.properties.Extra_Info.indexOf(clicked) === -1 ) {
+            if ( l._map ) {
+              map.removeLayer(l);
+            } else {
+              map.addLayer(l);
+            }
+          }
+        });
+      }
+    }, false);
     return div;
   };
   legend.addTo(map);
@@ -110,11 +126,12 @@ function showPrograms(json) {
   var programsList = [];
   json.objects.Export_Output.geometries.forEach(function(f) {
     f.properties.program_count = f.properties.Extra_Info.split('<br>').filter(function(d) { return d; }).length;
-    // console.log('program count', f.properties.program_count);
 
     var p = f.properties.Extra_Info.split('<br>').map(function(s) { return s.trim(); });
     p.forEach(function(pr) {
-      if ( pr && pr.indexOf("Adviser") === -1 && programsList.indexOf(pr) === -1 ) {
+      if ( pr && pr.indexOf('Adviser') === -1 && programsList.indexOf(pr) === -1 ) {
+        programLookup['program' + programsList.length] = pr;
+        console.log('programsList length', programsList.length);
         programsList.push(pr);
       }
     });
@@ -124,7 +141,6 @@ function showPrograms(json) {
     onEachFeature: onEachFeature, 
     style: style
   }).addTo(map);
-  // console.log('programs', programs);
   createLegend(programsList);
 }
 
