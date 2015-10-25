@@ -2,3 +2,5 @@
 config.codekit
 notes.txt
 js/min/
+built/
+min/
