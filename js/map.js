@@ -1,4 +1,18 @@
 var programs, programLookup = {}, highlight;
+
+var config = {
+  features: 'https://extranet.who.int/arcgis/rest/services/GIS/PAU_Programme_Activity_201510/MapServer/0',
+  name: 'detailed_2011.CNTRY_TERR',
+  programAll: '_v_PAU_Programme_Activity_2.Extra_Information',
+  programCount: '_v_PAU_Programme_Activity_2.Programme_Count',
+  // programMatcher is a regular expression to match things like:
+  // _v_PAU_Programme_Activity_2.Programme_3_Description
+  //  not:
+  // _v_PAU_Programme_Activity_2.Programme_3_ShortDescription
+  // _v_PAU_Programme_Activity_2.Programme_3_Activity
+  programMatcher: /Programme\_\d\_Description/
+};
+
 var map = L.map('map').setView([30, 0], 2);
 L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
 
@@ -18,7 +32,7 @@ function getColor(d) {
 
 function style(feature) {
   return {
-    fillColor: getColor(feature.properties.program_count),
+    fillColor: getColor(feature.properties[config.programCount]),
     weight: 1,
     opacity: 1,
     color: 'white',
@@ -50,11 +64,11 @@ function highlightFeature(e) {
 // Display feature info.
 function buildInfo(props) {
   var programInfo = '';
-  if ( props && props.hasOwnProperty('CNTRY_TERR') && props.hasOwnProperty('Extra_Info') ) {
-    programInfo = '<h4>WHO Programs:  ' + props.CNTRY_TERR + '</h4>';
-    programInfo += props.Extra_Info;
+  if ( props && props.hasOwnProperty(config.name) && props.hasOwnProperty(config.programAll) ) {
+    programInfo = '<h4>WHO Programs:  ' + props[config.name] + '</h4>';
+    programInfo += props[config.programAll];
   } else {
-    programInfo = '<h4>WHO Programs:</h4>Hover over a country.';
+    programInfo = '<h4>WHO Programs:</h4>Click a country.';
   }
   return programInfo;
 }
@@ -93,7 +107,7 @@ function createLegend(info) {
       if ( e.target.id ) {
         programs.getLayers().forEach(function(l) {
           var clicked = programLookup[e.target.id];
-          if ( l.feature.properties.Extra_Info.indexOf(clicked) === -1 ) {
+          if ( l.feature.properties[config.programAll].indexOf(clicked) === -1 ) {
             if ( l._map ) {
               map.removeLayer(l);
             } else {
@@ -108,49 +122,31 @@ function createLegend(info) {
   legend.addTo(map);
 }
 
-// https://gist.github.com/rclark/5779673/
-L.TopoJSON = L.GeoJSON.extend({
-  addData: function(jsonData) {    
-    if (jsonData.type === "Topology") {
-      for (var key in jsonData.objects) {
-        var geojson = topojson.feature(jsonData, jsonData.objects[key]);
-        L.GeoJSON.prototype.addData.call(this, geojson);
-      }
-    } else {
-      L.GeoJSON.prototype.addData.call(this, jsonData);
-    }
-  }  
-});
-
 function showPrograms(json) {
   var programsList = [];
-  json.objects.Export_Output.geometries.forEach(function(f) {
-    f.properties.program_count = f.properties.Extra_Info.split('<br>').filter(function(d) { return d; }).length;
-
-    var p = f.properties.Extra_Info.split('<br>').map(function(s) { return s.trim(); });
-    p.forEach(function(pr) {
-      if ( pr && pr.indexOf('Adviser') === -1 && programsList.indexOf(pr) === -1 ) {
-        programLookup['program' + programsList.length] = pr;
-        console.log('programsList length', programsList.length);
-        programsList.push(pr);
+  json.features.forEach(function(f) {
+    for ( var p in f.properties ) {
+      if ( config.programMatcher.test(p) ) {
+        var gram = f.properties[p];
+        if ( gram && gram.indexOf('Adviser') === -1 && programsList.indexOf(gram) === -1 ) {
+          programsList.push(gram);
+        }
       }
-    });
+    }
+    console.log('\nprogramsList', programsList);
   });
   console.log('programsList', programsList);
-  programs = new L.TopoJSON(json, {
-    onEachFeature: onEachFeature, 
-    style: style
-  }).addTo(map);
   createLegend(programsList);
 }
 
 // Get country data, add it to the map.
-fetch('data/who_programs.topojson')
-  .then(function(response) {
-    return response.json();
-  }).then(function(json) {
-    console.log('parsed json', json);
-    showPrograms(json);
-  }).catch(function(ex) {
-    console.log('parsing failed', ex);
-  });
+L.esri.Tasks.query({
+  url: config.features
+}).where("1=1").precision(6).run(function(error, countries) {
+  console.log('got stuff', countries);
+  showPrograms(countries);
+  programs = L.geoJson(countries, {
+    onEachFeature: onEachFeature, 
+    style: style
+  }).addTo(map);
+});
