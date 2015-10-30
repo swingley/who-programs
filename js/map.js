@@ -1,8 +1,11 @@
 var programs, programLookup = {}, highlight;
-var programTally = {}; // dev...checking country program participation
+
+// Object to specify various things including:  
+// url for features, attribute names.
 var config = {
   features: 'https://extranet.who.int/arcgis/rest/services/GIS/PAU_Programme_Activity_201510/MapServer/0',
   name: 'detailed_2011.CNTRY_TERR',
+  pharmAdviserFix: /(mailto:[A-Za-z]*@[A-Za-z]*\.[A-Za-z]*" [A-Za-z])/,
   programAll: '_v_PAU_Programme_Activity_2.Extra_Information',
   programCount: '_v_PAU_Programme_Activity_2.Programme_Count',
   // programMatcher is a regular expression to match things like:
@@ -16,7 +19,7 @@ var config = {
 var map = L.map('map').setView([30, 0], 2);
 L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
 
-// Styling info.
+// Styling info. These are a series of blues from WHO.
 var colors = [
   { 'hex': '#19375C' },
   { 'hex': '#1072BD' },
@@ -25,11 +28,9 @@ var colors = [
   { 'hex': '#94CDDB' },
   { 'hex': '#96B4D6' }
 ];
-
 function getColor(d) {
   return colors[d].hex;
 }
-
 function style(feature) {
   return {
     fillColor: getColor(feature.properties[config.programCount]),
@@ -61,12 +62,25 @@ function highlightFeature(e) {
   highlight = e.target;
 }
 
+function fixAdviserMarkup(info) {
+  // National Pharmaceutical Adviser markup is not valid. 
+  // Example:  <a href="mailto:mulumbaa@who.int" Dr Anastasie Mulumba</a>
+  // Missing the closing '>' after the email address.
+  // Fix by inserting missing '>' after the href value.
+  if ( info.indexOf('mailto') > -1 ) {
+    info = info.replace(config.pharmAdviserFix, function(a, b) {
+      return b.replace(' ', '>');
+    });
+  }
+  return info;
+}
+
 // Display feature info.
 function buildInfo(props) {
   var programInfo = '';
   if ( props && props.hasOwnProperty(config.name) && props.hasOwnProperty(config.programAll) ) {
     programInfo = '<h4>' + props[config.name] + '</h4>';
-    programInfo += props[config.programAll];
+    programInfo += fixAdviserMarkup(props[config.programAll]);
   } else {
     programInfo = '<h4>WHO Programs:</h4>Click a country.';
   }
@@ -106,7 +120,6 @@ function createLegend(info) {
     filters.addEventListener('click', function(e) {
       if ( e.target.id ) {
         var selected = getSelectedPrograms(e);
-        console.log('click event listener, selected', selected);
         programs.getLayers().forEach(function(l) {
           var props = l.feature.properties;
           var show = false;
@@ -140,7 +153,6 @@ function createProgramList(json) {
   var programsList = [];
   // Loop through all features.
   json.features.forEach(function(f, i) {
-    console.log('looping through features', i, f.properties[config.name]);
     // Loop through all attributes.
     for ( var p in f.properties ) {
       // Check if the current attribute has program info.
@@ -152,26 +164,19 @@ function createProgramList(json) {
           if ( gram.indexOf('Adviser') === -1 && programsList.indexOf(gram) === -1 ) {
             programLookup['program' + programsList.length] = gram;
             programLookup[gram] = 'program' + programsList.length;
-            programTally['program' + programsList.length] = [];
             programsList.push(gram);
-            console.log('\tpushed:  ', gram);
           }
           // Add a new attribute to indicate this feature participates in a program.
           // This attribute is used when filtering (showing/hiding) features.
           var programId = programLookup[gram];
           if ( programId ) {
             f.properties[programId] = true;
-            console.log('\t', f.properties[config.name], programLookup[gram], gram);
-            // all program tally stuff is debug...remove at some point
-            if ( programTally[programId].indexOf(f.properties[config.name]) === -1 ) {
-              programTally[programId].push(f.properties[config.name]);
-            }
           }
         }
       }
     }
   });
-  console.log('programsList', programsList);
+  // console.log('programsList', programsList);
   createLegend(programsList);
 }
 
@@ -189,7 +194,7 @@ function getSelectedPrograms(e) {
 L.esri.Tasks.query({
   url: config.features
 }).where("1=1").precision(6).run(function(error, countries) {
-  console.log('got stuff', countries);
+  // console.log('got countries', countries);
   createProgramList(countries);
   programs = L.geoJson(countries, {
     onEachFeature: onEachFeature, 
