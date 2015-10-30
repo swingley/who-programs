@@ -124,6 +124,13 @@ function createLegend(info) {
         });
       }
     }, false);
+    // Prevent map panning/zooming when interacting with the legend container.
+    if (!L.Browser.touch) {
+      L.DomEvent.disableClickPropagation(div);
+      L.DomEvent.on(div, 'mousewheel', L.DomEvent.stopPropagation);
+    } else {
+      L.DomEvent.on(div, 'click', L.DomEvent.stopPropagation);
+    }
     return div;
   };
   legend.addTo(map);
