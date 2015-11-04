@@ -21,7 +21,10 @@ var map = L.map('map', {
   minZoom: 1,
   maxZoom: 4
 }).setView([30, 0], 2);
+// ArcGIS Online Gray basemap.
 L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
+// Scale bar.
+L.control.scale({ imperial: false }).addTo(map);
 
 // Styling info. These are a series of blues from WHO.
 var colors = [
