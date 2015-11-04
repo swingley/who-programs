@@ -13,20 +13,24 @@ var config = {
   //  not:
   // _v_PAU_Programme_Activity_2.Programme_3_Description
   // _v_PAU_Programme_Activity_2.Programme_3_Activity
-  programMatcher: /Programme\_\d\_ShortDescription/
+  programMatcher: /Programme\_\d\_ShortDescription/,
+  advisorsMessage: 'If a country has a National Pharmaceutical Adviser, the advisor name is shown when a country is clicked.'
 };
 
-var map = L.map('map').setView([30, 0], 2);
+var map = L.map('map', {
+  minZoom: 1,
+  maxZoom: 4
+}).setView([30, 0], 2);
 L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
 
 // Styling info. These are a series of blues from WHO.
 var colors = [
-  { 'hex': '#19375C' },
-  { 'hex': '#1072BD' },
-  { 'hex': '#1EB1ED' },
   { 'hex': '#B7DDE7' },
   { 'hex': '#94CDDB' },
-  { 'hex': '#96B4D6' }
+  { 'hex': '#96B4D6' },
+  { 'hex': '#1EB1ED' },
+  { 'hex': '#1072BD' },
+  { 'hex': '#19375C' }
 ];
 function getColor(d) {
   return colors[d].hex;
@@ -82,7 +86,7 @@ function buildInfo(props) {
     programInfo = '<h4>' + props[config.name] + '</h4>';
     programInfo += fixAdviserMarkup(props[config.programAll]);
   } else {
-    programInfo = '<h4>WHO Programs:</h4>Click a country.';
+    programInfo = '<h4>WHO Programmes:</h4>Click a country.';
   }
   return programInfo;
 }
@@ -91,6 +95,16 @@ function onEachFeature(feature, layer) {
     click: highlightFeature
   });
   layer.bindPopup(buildInfo(feature.properties));
+}
+
+function getSelectedPrograms() {
+  // Get all the checked check boxes.
+  var checked = document.querySelectorAll('input[type=checkbox]:checked');
+  // Return the IDs
+  var selected = _.map(checked, function(c) {
+    return c.id;
+  });
+  return selected;
 }
 
 // Legend
@@ -137,6 +151,9 @@ function createLegend(info) {
         });
       }
     }, false);
+    // Add info about National Pharmaceutical Advisers
+    var advisors = L.DomUtil.create('div', 'advisors', div);
+    advisors.innerHTML = config.advisorsMessage;
     // Prevent map panning/zooming when interacting with the legend container.
     if (!L.Browser.touch) {
       L.DomEvent.disableClickPropagation(div);
@@ -152,7 +169,7 @@ function createLegend(info) {
 function createProgramList(json) {
   var programsList = [];
   // Loop through all features.
-  json.features.forEach(function(f, i) {
+  json.features.forEach(function(f) {
     // Loop through all attributes.
     for ( var p in f.properties ) {
       // Check if the current attribute has program info.
@@ -178,16 +195,6 @@ function createProgramList(json) {
   });
   // console.log('programsList', programsList);
   createLegend(programsList);
-}
-
-function getSelectedPrograms(e) {
-  // Get all the checked check boxes.
-  var checked = document.querySelectorAll('input[type=checkbox]:checked');
-  // Return the IDs
-  var selected = _.map(checked, function(c) {
-    return c.id;
-  });
-  return selected;
 }
 
 // Get country data, add it to the map.

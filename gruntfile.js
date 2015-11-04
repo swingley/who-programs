@@ -20,7 +20,7 @@ module.exports = function(grunt) {
         src: [
           'node_modules/leaflet/dist/leaflet.js', 
           'node_modules/esri-leaflet/dist/esri-leaflet.js', 
-          'node_modules/topojson/topojson.js', 
+          'js/lodash.custom.min.js', 
           'js/map.js'
         ],
         dest: 'built/<%= pkg.name %>.min.js'
