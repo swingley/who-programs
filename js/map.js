@@ -18,7 +18,7 @@ var config = {
 };
 
 var map = L.map('map', {
-  minZoom: 1,
+  minZoom: 2,
   maxZoom: 4
 }).setView([30, 0], 2);
 // ArcGIS Online Gray basemap.
@@ -115,7 +115,8 @@ function createLegend(info) {
   var legend = L.control({ position: 'bottomright' });
   legend.onAdd = function() {
     var div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = '<div class="heading">Program Count by Country</div>';
+    div.innerHTML = '<h3>WHO pharmaceutical programmes in countries</h3>' +
+      '<div class="heading">Programme count by country</div>';
     var counts = [1, 2, 3, 4, 5];
     // Create swatches.
     for (var i = 0; i < counts.length; i++) {
