@@ -14,7 +14,8 @@ var config = {
   // _v_PAU_Programme_Activity_2.Programme_3_Description
   // _v_PAU_Programme_Activity_2.Programme_3_Activity
   programMatcher: /Programme\_\d\_ShortDescription/,
-  advisorsMessage: 'If a country has a National Pharmaceutical Adviser, the advisor name is shown when a country is clicked.'
+  whoDisclaimerShort: 'WHO Disclaimer',
+  whoDisclaimer: 'WHO disclaimer:  The boundaries and names shown and the designations used on this map do not imply the expression of any opinion whatsoever on the part of the World Health Organization concerning the legal status of any country, territory, city or area or of its authorities, or concerning the delimitation of its frontiers or boundaries. Dotted lines on maps represent approximate border lines for which there may not yet be full agreement (click to hide).'
 };
 
 var map = L.map('map', {
@@ -25,6 +26,27 @@ var map = L.map('map', {
 L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
 // Scale bar.
 L.control.scale({ imperial: false }).addTo(map);
+
+// Add WHO disclaimer.
+var attribution = document.getElementsByClassName("leaflet-control-attribution")[0];
+var shortDisclaimer = L.DomUtil.create('span');
+var disclaimer = L.DomUtil.create('span', 'who-disclaimer');
+var fullDisclaimer = L.DomUtil.create('span', 'who-disclaimer-full hidden');
+fullDisclaimer.innerHTML = config.whoDisclaimer;
+fullDisclaimer.addEventListener('click', function() {
+  // this.classList.add('hidden');
+  this.className = this.className + ' hidden';
+});
+shortDisclaimer.innerHTML = ' | ';
+disclaimer.innerHTML = config.whoDisclaimerShort;
+disclaimer.addEventListener('click', function() {
+  console.log('clicked', this, fullDisclaimer);
+  fullDisclaimer.classList.remove('hidden');
+  fullDisclaimer.className = fullDisclaimer.className.replace(' hidden', '');
+});
+shortDisclaimer.appendChild(disclaimer);
+attribution.appendChild(shortDisclaimer);
+document.body.appendChild(fullDisclaimer);
 
 // Styling info. These are a series of blues from WHO.
 var colors = [
@@ -131,13 +153,15 @@ function createLegend(info) {
     var filters = L.DomUtil.create('div', 'filters', div);
     filters.innerHTML = '<div class="heading">Show Countries with:</div>';
     for ( var k = 0; k < info.length; k++ ) {
+      var programId = programLookup[info[k]];
       filters.innerHTML += '<div class="program">' +
-        '<input type="checkbox" checked="checked" id="program' + k + 
-        '"><label class="program" for="program' + k + '">' + info[k] + '</label></div';
+        '<input type="checkbox" checked="checked" id="' + programId + 
+        '"><label class="program" for="' + programId + '">' + info[k] + '</label></div';
     }
     filters.addEventListener('click', function(e) {
       if ( e.target.id ) {
         var selected = getSelectedPrograms(e);
+        console.log('selected', selected);
         programs.getLayers().forEach(function(l) {
           var props = l.feature.properties;
           var show = false;
@@ -155,9 +179,6 @@ function createLegend(info) {
         });
       }
     }, false);
-    // Add info about National Pharmaceutical Advisers
-    var advisors = L.DomUtil.create('div', 'advisors', div);
-    advisors.innerHTML = config.advisorsMessage;
     // Prevent map panning/zooming when interacting with the legend container.
     if (!L.Browser.touch) {
       L.DomEvent.disableClickPropagation(div);
@@ -182,7 +203,7 @@ function createProgramList(json) {
         // Check if this attribute corresponds to a program.
         if ( gram ) {
           // Create a list of unique programs and lookup object
-          if ( gram.indexOf('Adviser') === -1 && programsList.indexOf(gram) === -1 ) {
+          if ( programsList.indexOf(gram) === -1 ) {
             programLookup['program' + programsList.length] = gram;
             programLookup[gram] = 'program' + programsList.length;
             programsList.push(gram);
@@ -197,6 +218,18 @@ function createProgramList(json) {
       }
     }
   });
+  // Move pharm adviser to the end of the list.
+  var position = -1;
+  for ( var i = 0; i < programsList.length; i++ ) {
+    if ( programsList[i].indexOf("Adviser") > -1 ) {
+      position = i;
+      break;
+    }
+  }
+  if ( position > -1 ) {
+    var a = programsList.splice(position, 1)[0];
+    programsList.push(a);
+  }
   // console.log('programsList', programsList);
   createLegend(programsList);
 }
@@ -205,7 +238,6 @@ function createProgramList(json) {
 L.esri.Tasks.query({
   url: config.features
 }).where("1=1").precision(6).run(function(error, countries) {
-  // console.log('got countries', countries);
   createProgramList(countries);
   programs = L.geoJson(countries, {
     onEachFeature: onEachFeature, 

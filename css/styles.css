@@ -4,6 +4,9 @@ html, body,  #map {
   padding: 0;
   width : 100%;
 }
+.hidden {
+  display: none;
+}
 .legend {
   padding: 0 8px 6px 8px;
   font: 14px/16px Arial, Helvetica, sans-serif;
@@ -52,8 +55,25 @@ html, body,  #map {
   vertical-align: top;
   width: 10%; 
 }
-.legend .advisors {
-  border-top: 1px solid #C5C5C5;
-  margin-top: 4px;
-  padding-top: 6px;
+
+.leaflet-left .leaflet-control-scale {
+    margin-bottom: 10px;
+    margin-left: 10px;
+}
+.leaflet-control-attribution .who-disclaimer {
+  color: #0078A8;
+  cursor: pointer;
+}
+.leaflet-control-attribution .who-disclaimer:hover {
+  text-decoration: underline;
+}
+.who-disclaimer-full {
+  background: #fff;
+  bottom: 0;
+  color: #333;
+  font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
+  padding: 5px;
+  position: absolute;
+  right: 0;
+  z-index: 1001;
 }
