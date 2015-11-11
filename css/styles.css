@@ -7,6 +7,33 @@ html, body,  #map {
 .hidden {
   display: none;
 }
+.header {
+  background: #fff;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  color: #008DC9;
+  left: 0;
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1007;
+}
+.header h3 {
+  display: inline-block;
+  font-family: sans-serif;
+  font-size: 1.3em;
+  font-weight: normal;
+  margin: 1em;
+  vertical-align: middle;
+}
+.header img {
+  float: right;
+  font-size: 1.3em;
+  margin: 0.5em 1em;
+  width: 140px;
+}
+div.leaflet-control-zoom {
+  top: 65px;
+}
 .legend {
   padding: 0 8px 6px 8px;
   font: 14px/16px Arial, Helvetica, sans-serif;
@@ -42,6 +69,10 @@ html, body,  #map {
 }
 .filters div.program {
   padding-bottom: 4px;
+}
+.filters div.program.pharm-adviser {
+  border-top: 1px solid #ccc;
+  margin-top: 4px;
 }
 .filters label.program {
   display: inline-block;

@@ -20,12 +20,13 @@ var config = {
 
 var map = L.map('map', {
   minZoom: 2,
-  maxZoom: 4
+  maxZoom: 4,
+  maxBounds: [ [-60, -220], [75, 220] ]
 }).setView([30, 0], 2);
 // ArcGIS Online Gray basemap.
 L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
 // Scale bar.
-L.control.scale({ imperial: false }).addTo(map);
+L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
 // Add WHO disclaimer.
 var attribution = document.getElementsByClassName("leaflet-control-attribution")[0];
@@ -134,11 +135,10 @@ function getSelectedPrograms() {
 
 // Legend
 function createLegend(info) {
-  var legend = L.control({ position: 'bottomright' });
+  var legend = L.control({ position: 'bottomleft' });
   legend.onAdd = function() {
     var div = L.DomUtil.create('div', 'legend');
-    div.innerHTML = '<h3>WHO pharmaceutical programmes in countries</h3>' +
-      '<div class="heading">Programme count by country</div>';
+    div.innerHTML = '<div class="heading">Programme count by country</div>';
     var counts = [1, 2, 3, 4, 5];
     // Create swatches.
     for (var i = 0; i < counts.length; i++) {
@@ -151,12 +151,17 @@ function createLegend(info) {
     }
     // Add programs
     var filters = L.DomUtil.create('div', 'filters', div);
-    filters.innerHTML = '<div class="heading">Show Countries with:</div>';
+    filters.innerHTML = '<div class="heading">Show countries with:</div>';
     for ( var k = 0; k < info.length; k++ ) {
       var programId = programLookup[info[k]];
-      filters.innerHTML += '<div class="program">' +
-        '<input type="checkbox" checked="checked" id="' + programId + 
-        '"><label class="program" for="' + programId + '">' + info[k] + '</label></div';
+      // Add a separator above last entry, which is pharm adivser.
+      if ( k === (info.length - 1) ) {
+        filters.innerHTML += '<div class="program pharm-adviser">';
+      } else {
+        filters.innerHTML += '<div class="program">';
+      }
+      filters.innerHTML += '<input type="checkbox" checked="checked" id="' + programId +
+        '"><label class="program" for="' + programId + '">' + info[k] + '</label></div>';
     }
     filters.addEventListener('click', function(e) {
       if ( e.target.id ) {
@@ -218,6 +223,8 @@ function createProgramList(json) {
       }
     }
   });
+  // Alphabetize.
+  programsList.sort();
   // Move pharm adviser to the end of the list.
   var position = -1;
   for ( var i = 0; i < programsList.length; i++ ) {
