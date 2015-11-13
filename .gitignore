@@ -1,6 +1,6 @@
 .jshintrc
 config.codekit
 notes.txt
-js/min/
 built/
-min/
+packaged/
+*.min.js
