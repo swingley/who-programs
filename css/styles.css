@@ -1,3 +1,6 @@
+* { 
+  box-sizing: border-box;
+}
 html, body,  #map {
   height : 100%;
   margin: 0;
@@ -23,13 +26,15 @@ html, body,  #map {
   font-size: 1.3em;
   font-weight: normal;
   margin: 1em;
+  width: 75%;
   vertical-align: middle;
 }
 .header img {
   float: right;
   font-size: 1.3em;
   margin: 0.5em 1em;
-  width: 140px;
+  max-width: 140px;
+  width: 25%;
 }
 div.leaflet-control-zoom {
   top: 65px;
