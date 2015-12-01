@@ -6,8 +6,17 @@
     maxZoom: 4,
     maxBounds: [ [-60, -220], [75, 220] ]
   }).setView([30, 0], 2);
-  // ArcGIS Online Gray basemap.
-  L.esri.basemapLayer("Gray", { hideLogo: true }).addTo(map);
+  var basemapOptions = { hideLogo: true };
+  var basemap = config.basemap;
+  if ( L.esri.BasemapLayer.TILES.hasOwnProperty(basemap) ) {
+    // Config file says to use an ArcGIS Online Gray basemap.
+    L.esri.basemapLayer(basemap, basemapOptions).addTo(map);
+  } else {
+    // Config file assume to have a url like:
+    // http://ebolamaps.who.int/arcgis/rest/services/BASEMAPS/WHO_West_Africa_background_7/MapServer
+    basemapOptions.url = basemap;
+    L.esri.tiledMapLayer(basemapOptions).addTo(map);
+  }
   // Scale bar.
   L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
 
