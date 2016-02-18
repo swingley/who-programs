@@ -35,7 +35,7 @@ require([
       titleInBody: false
   }, domConstruct.create("div"));
   popup.anchor = 'top';
-  //Add the dark theme which is customized further in the <style> tag at the top of this page
+  //Add the light theme.
   domClass.add(popup.domNode, "light");
   window.map = new Map('map', { extent: bounds, infoWindow: popup, logo: false });
   map.addLayer(new Tiled(config.base));
@@ -92,7 +92,7 @@ require([
     return info;
   }
 
-  // Display feature info.
+  // Display feature info. Must be global as it is called from info template.
   window.buildInfo = function(feature) {
     console.log('buildInfo props', props);
     var props = feature.attributes;
@@ -249,14 +249,4 @@ require([
       console.log('query error', error);
     }
   );
-  return;
-  L.esri.Tasks.query({
-    url: config.features
-  }).where("1=1").precision(6).run(function(error, countries) {
-    createProgramList(countries);
-    programs = L.geoJson(countries, {
-      onEachFeature: onEachFeature, 
-      style: style
-    }).addTo(map);
-  });
 });
