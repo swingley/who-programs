@@ -1,39 +1,64 @@
-(function() {
+require([
+  'esri/config',
+  'esri/map', 'esri/geometry/Extent',
+  'esri/layers/ArcGISTiledMapServiceLayer',
+  'esri/layers/GraphicsLayer', 'esri/graphic', 'esri/Color',
+  'esri/symbols/SimpleLineSymbol', 'esri/symbols/SimpleFillSymbol',
+  'esri/dijit/Scalebar', 'esri/dijit/Popup', 'esri/InfoTemplate',
+  'esri/tasks/QueryTask', 'esri/tasks/query',
+  'dojo/dom', 'dojo/dom-construct', 'dojo/dom-class'
+], function(
+  esriConfig,
+  Map, Extent, 
+  Tiled,
+  GraphicsLayer, Graphic, Color,
+  LineSymbol, FillSymbol,
+  Scalebar, Popup, InfoTemplate,
+  QueryTask, Query,
+  dom, domConstruct, domClass
+) {
   var programs, programLookup = {}, highlight;
 
-  var map = L.map('map', {
-    minZoom: 2,
-    maxZoom: 4,
-    maxBounds: [ [-60, -220], [75, 220] ]
-  }).setView([30, 0], 2);
-  var basemapOptions = { hideLogo: true };
-  var basemap = config.basemap;
-  if ( L.esri.BasemapLayer.TILES.hasOwnProperty(basemap) ) {
-    // Config file says to use an ArcGIS Online Gray basemap.
-    L.esri.basemapLayer(basemap, basemapOptions).addTo(map);
-  } else {
-    // Config file assume to have a url like:
-    // http://ebolamaps.who.int/arcgis/rest/services/BASEMAPS/WHO_West_Africa_background_7/MapServer
-    basemapOptions.url = basemap;
-    L.esri.tiledMapLayer(basemapOptions).addTo(map);
-  }
+  esriConfig.defaults.io.corsDetection = false;
+  esriConfig.defaults.map.zoomDuration = 200;
+  var bounds = new Extent({
+    "xmin": -17054861, 
+    "ymin": -5573571,
+    "xmax": 14969784, 
+    "ymax": 11347631,
+    "spatialReference": { "wkid": 54013 }
+  });
+  var whiteLine = new LineSymbol('solid', new Color([255, 255, 255, 1]), 2);
+  var fill = new FillSymbol("solid", whiteLine, null);
+  var popup = new Popup({
+      fillSymbol: fill,
+      titleInBody: false
+  }, domConstruct.create("div"));
+  popup.anchor = 'top';
+  //Add the dark theme which is customized further in the <style> tag at the top of this page
+  domClass.add(popup.domNode, "light");
+  window.map = new Map('map', { extent: bounds, infoWindow: popup, logo: false });
+  map.addLayer(new Tiled(config.base));
+  map.addLayer(new Tiled(config.disputed));
   // Scale bar.
-  L.control.scale({ imperial: false, position: 'bottomright' }).addTo(map);
+  new Scalebar({ 
+    attachTo: 'bottom-right',
+    map: map, 
+    scalebarStyle: 'line',
+    scalebarUnit: 'metric'
+  });
 
   // Add WHO disclaimer.
-  var attribution = document.getElementsByClassName("leaflet-control-attribution")[0];
-  var shortDisclaimer = L.DomUtil.create('span');
-  var disclaimer = L.DomUtil.create('span', 'who-disclaimer');
-  var fullDisclaimer = L.DomUtil.create('span', 'who-disclaimer-full hidden');
+  var attribution = document.getElementsByClassName('esriAttributionList')[0];
+  var shortDisclaimer = domConstruct.create('span');
+  var disclaimer = domConstruct.create('span', { 'class': 'who-disclaimer' });
+  var fullDisclaimer = domConstruct.create('span', { 'class': 'who-disclaimer-full hidden' });
   fullDisclaimer.innerHTML = config.whoDisclaimer;
   fullDisclaimer.addEventListener('click', function() {
-    // this.classList.add('hidden');
     this.className = this.className + ' hidden';
   });
-  shortDisclaimer.innerHTML = ' | ';
   disclaimer.innerHTML = config.whoDisclaimerShort;
   disclaimer.addEventListener('click', function() {
-    console.log('clicked', this, fullDisclaimer);
     fullDisclaimer.classList.remove('hidden');
     fullDisclaimer.className = fullDisclaimer.className.replace(' hidden', '');
   });
@@ -53,36 +78,6 @@
   function getColor(d) {
     return colors[d].hex;
   }
-  function style(feature) {
-    return {
-      fillColor: getColor(feature.properties[config.programCount]),
-      weight: 1,
-      opacity: 1,
-      color: 'white',
-      fillOpacity: 0.7
-    };
-  }
-
-  // Feature interaction.
-  function resetHighlight() {
-    if ( highlight ) {
-      programs.resetStyle(highlight);
-    }
-  }
-  function highlightFeature(e) {
-    resetHighlight();
-    var layer = e.target;
-    layer.setStyle({
-      weight: 2,
-      color: '#fff',
-      dashArray: '',
-      fillOpacity: 0.7
-    });
-    if (!L.Browser.ie && !L.Browser.opera) {
-      layer.bringToFront();
-    }
-    highlight = e.target;
-  }
 
   function fixAdviserMarkup(info) {
     // National Pharmaceutical Adviser markup is not valid. 
@@ -98,21 +93,16 @@
   }
 
   // Display feature info.
-  function buildInfo(props) {
+  window.buildInfo = function(feature) {
+    console.log('buildInfo props', props);
+    var props = feature.attributes;
     var programInfo = '';
     if ( props && props.hasOwnProperty(config.name) && props.hasOwnProperty(config.programAll) ) {
-      programInfo = '<h4>' + props[config.name] + '</h4>';
       programInfo += fixAdviserMarkup(props[config.programAll]);
     } else {
       programInfo = '<h4>WHO Programmes:</h4>Click a country.';
     }
     return programInfo;
-  }
-  function onEachFeature(feature, layer) {
-    layer.on({
-      click: highlightFeature
-    });
-    layer.bindPopup(buildInfo(feature.properties));
   }
 
   function getSelectedPrograms() {
@@ -127,76 +117,65 @@
 
   // Legend
   function createLegend(info) {
-    var legend = L.control({ position: 'bottomleft' });
-    legend.onAdd = function() {
-      var div = L.DomUtil.create('div', 'legend');
-      div.innerHTML = '<div class="heading">Programme count by country</div>';
-      var counts = [1, 2, 3, 4, 5];
-      // Create swatches.
-      for (var i = 0; i < counts.length; i++) {
-        div.innerHTML += '<i style="background:' + getColor(counts[i]) + '"></i>';
-      }
-      // Add swatch labels.
-      var labels = L.DomUtil.create('div', 'swatch-labels', div);
-      for (var j = 0; j < counts.length; j++) {
-        labels.innerHTML += '<span>' + (j+1) + '</span>';
-      }
-      // Add programs
-      var filters = L.DomUtil.create('div', 'filters', div);
-      filters.innerHTML = '<div class="heading">Show countries with:</div>';
-      for ( var k = 0; k < info.length; k++ ) {
-        var programId = programLookup[info[k]];
-        // Add a separator above last entry, which is pharm adivser.
-        if ( k === (info.length - 1) ) {
-          filters.innerHTML += '<div class="program pharm-adviser">';
-        } else {
-          filters.innerHTML += '<div class="program">';
-        }
-        filters.innerHTML += '<input type="checkbox" checked="checked" id="' + programId +
-          '"><label class="program" for="' + programId + '">' + info[k] + '</label></div>';
-      }
-      filters.addEventListener('click', function(e) {
-        if ( e.target.id ) {
-          var selected = getSelectedPrograms(e);
-          console.log('selected', selected);
-          programs.getLayers().forEach(function(l) {
-            var props = l.feature.properties;
-            var show = false;
-            for ( var i = 0; i < selected.length; i++ ) {
-              if ( props.hasOwnProperty(selected[i]) && props[selected[i]] ) {
-                show = true;
-                break;
-              }
-            }
-            if ( show ) {
-              map.addLayer(l);
-            } else {
-              map.removeLayer(l);
-            }
-          });
-        }
-      }, false);
-      // Prevent map panning/zooming when interacting with the legend container.
-      if (!L.Browser.touch) {
-        L.DomEvent.disableClickPropagation(div);
-        L.DomEvent.on(div, 'mousewheel', L.DomEvent.stopPropagation);
+    var div = domConstruct.create('div', { 'class': 'legend' });
+    div.innerHTML = '<div class="heading">Programme count by country</div>';
+    var counts = [1, 2, 3, 4, 5];
+    // Create swatches.
+    for (var i = 0; i < counts.length; i++) {
+      div.innerHTML += '<i style="background:' + getColor(counts[i]) + '"></i>';
+    }
+    // Add swatch labels.
+    var labels = domConstruct.create('div', { 'class': 'swatch-labels' }, div);
+    for (var j = 0; j < counts.length; j++) {
+      labels.innerHTML += '<span>' + (j+1) + '</span>';
+    }
+    // Add programs
+    var filters = domConstruct.create('div', { 'class': 'filters' }, div);
+    filters.innerHTML = '<div class="heading">Show countries with:</div>';
+    for ( var k = 0; k < info.length; k++ ) {
+      var programId = programLookup[info[k]];
+      // Add a separator above last entry, which is pharm adivser.
+      if ( k === (info.length - 1) ) {
+        filters.innerHTML += '<div class="program pharm-adviser">';
       } else {
-        L.DomEvent.on(div, 'click', L.DomEvent.stopPropagation);
+        filters.innerHTML += '<div class="program">';
       }
-      return div;
-    };
-    legend.addTo(map);
+      filters.innerHTML += '<input type="checkbox" checked="checked" id="' + programId +
+        '"><label class="program" for="' + programId + '">' + info[k] + '</label></div>';
+    }
+    filters.addEventListener('click', function(e) {
+      if ( e.target.id ) {
+        var selected = getSelectedPrograms(e);
+        console.log('selected', selected);
+        map.getLayer('countries').graphics.forEach(function(g) {
+          var props = g.attributes;
+          var show = false;
+          for ( var i = 0; i < selected.length; i++ ) {
+            if ( props.hasOwnProperty(selected[i]) && props[selected[i]] ) {
+              show = true;
+              break;
+            }
+          }
+          if ( show ) {
+            g.show();
+          } else {
+            g.hide();
+          }
+        });
+      }
+    }, false);
+    domConstruct.place(div, map.root);
   }
 
-  function createProgramList(json) {
+  function createProgramList(features) {
     var programsList = [];
     // Loop through all features.
-    json.features.forEach(function(f) {
+    features.forEach(function(f) {
       // Loop through all attributes.
-      for ( var p in f.properties ) {
+      for ( var p in f.attributes ) {
         // Check if the current attribute has program info.
         if ( config.programMatcher.test(p) ) {
-          var gram = f.properties[p];
+          var gram = f.attributes[p];
           // Check if this attribute corresponds to a program.
           if ( gram ) {
             // Create a list of unique programs and lookup object
@@ -209,7 +188,7 @@
             // This attribute is used when filtering (showing/hiding) features.
             var programId = programLookup[gram];
             if ( programId ) {
-              f.properties[programId] = true;
+              f.attributes[programId] = true;
             }
           }
         }
@@ -233,7 +212,44 @@
     createLegend(programsList);
   }
 
+  function createGraphics(features) {
+    var gl = new GraphicsLayer({ id: 'countries' });
+    var white = new LineSymbol(whiteLine.toJson()).setWidth(1)
+    var fill = new FillSymbol('solid', white, null);
+    var infoTemplate = new InfoTemplate('${' + config.name + '}', buildInfo);
+    features.forEach(function(f) {
+      // create a graphic, add it to the map;
+      var color = getColor(f.attributes[config.programCount]);
+      var symbol = new FillSymbol(fill.toJson()).setColor(new Color(color));
+      symbol = symbol.toJson();
+      symbol.color[3] = 178; // .7 opacity
+      symbol = new FillSymbol(symbol);
+      f.setSymbol(symbol);
+      f.setInfoTemplate(infoTemplate)
+      gl.add(f);
+    });
+    map.addLayer(gl);
+  }
+
   // Get country data, add it to the map.
+  var queryTask = new QueryTask(config.features);
+  var query = new Query();
+  query.where = '1=1';
+  query.returnGeometry = true;
+  query.geometryPrecision = 1;
+  query.maxAllowableOffset = 2116; // map.extent.getWidth() / map.width at largest scale.
+  query.outFields = ['*'];
+  queryTask.execute(query).then(
+    function(result) {
+      console.log('success', result);
+      createProgramList(result.features);
+      createGraphics(result.features);
+    },
+    function(error) {
+      console.log('query error', error);
+    }
+  );
+  return;
   L.esri.Tasks.query({
     url: config.features
   }).where("1=1").precision(6).run(function(error, countries) {
@@ -243,4 +259,4 @@
       style: style
     }).addTo(map);
   });
-})();
+});

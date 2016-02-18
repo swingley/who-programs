@@ -2,6 +2,7 @@
   box-sizing: border-box;
 }
 html, body,  #map {
+  background: #E0E8FF;
   height : 100%;
   margin: 0;
   padding: 0;
@@ -36,9 +37,6 @@ html, body,  #map {
   max-width: 140px;
   width: 25%;
 }
-div.leaflet-control-zoom {
-  top: 65px;
-}
 .legend {
   padding: 0 8px 6px 8px;
   font: 14px/16px Arial, Helvetica, sans-serif;
@@ -49,6 +47,9 @@ div.leaflet-control-zoom {
   line-height: 18px;
   color: #555;
   max-width: 260px;
+  bottom: 10px;
+  position: absolute;
+  left: 10px;
 }
 .legend .heading {
   font-weight: bold;
@@ -96,11 +97,12 @@ div.leaflet-control-zoom {
     margin-bottom: 10px;
     margin-left: 10px;
 }
-.leaflet-control-attribution .who-disclaimer {
+.esriAttributionList .who-disclaimer {
   color: #0078A8;
   cursor: pointer;
+  font: 12px/1.5 "Helvetica Neue", Arial, Helvetica, sans-serif;
 }
-.leaflet-control-attribution .who-disclaimer:hover {
+.esriAttributionList .who-disclaimer:hover {
   text-decoration: underline;
 }
 .who-disclaimer-full {
@@ -112,4 +114,43 @@ div.leaflet-control-zoom {
   position: absolute;
   right: 0;
   z-index: 1001;
+}
+
+/* esri style overrides */
+.esriScaleBar {
+  right: 148px;
+}
+.esriScalebarSecondNumber {
+  font-family: sans-serif;
+  font-weight: 400;
+  left: 33%;
+}
+#map_zoom_slider {
+  left: 10px;
+  top: 75px;
+  box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  border-radius: 4px;
+  border: 0;
+}
+.esriSimpleSliderIncrementButton span,
+.esriSimpleSliderDecrementButton span {
+  font-size: 75%;
+}
+.esriSimpleSliderVertical .esriSimpleSliderIncrementButton {
+  border-bottom: 1px solid #ccc;
+}
+.esriPopupWrapper .actionsPane,
+.esriPopupWrapper .titleButton.prev,
+.esriPopupWrapper .titleButton.next,
+.esriPopupWrapper .titleButton.maximize {
+  display: none;
+}
+.esriPopup.light .titlePane {
+  font-weight: bold;
+  height: auto;
+  padding-bottom: 0;
+}
+.esriPopup.light .contentPane {
+  border-bottom-left-radius: 3px;
+  border-bottom-right-radius: 3px;
 }
