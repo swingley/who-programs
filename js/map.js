@@ -1,5 +1,5 @@
 require([
-  'esri/config',
+  'esri/config', 'esri/basemaps',
   'esri/map', 'esri/geometry/Extent',
   'esri/layers/ArcGISTiledMapServiceLayer',
   'esri/layers/GraphicsLayer', 'esri/graphic', 'esri/Color',
@@ -8,8 +8,8 @@ require([
   'esri/tasks/QueryTask', 'esri/tasks/query',
   'dojo/dom', 'dojo/dom-construct', 'dojo/dom-class'
 ], function(
-  esriConfig,
-  Map, Extent, 
+  esriConfig, basemaps,
+  Map, Extent,
   Tiled,
   GraphicsLayer, Graphic, Color,
   LineSymbol, FillSymbol,
@@ -17,42 +17,65 @@ require([
   QueryTask, Query,
   dom, domConstruct, domClass
 ) {
-  var programs, programLookup = {}, highlight;
+  var programs, programLookup = {},
+    highlight;
 
+  // Custom basemap using WHO services.
+  // Using isReference: true puts service images/tiles on top of vector layers.
+  basemaps['who-eckert'] = {
+    baseMapLayers: [{
+      url: config.base
+    }, {
+      url: config.disputed,
+      isReference: true
+    }],
+    thumbnailUrl: '',
+    title: 'WHO'
+  }
   esriConfig.defaults.io.corsDetection = false;
   esriConfig.defaults.map.zoomDuration = 200;
   var bounds = new Extent({
-    "xmin": -17054861, 
+    "xmin": -17054861,
     "ymin": -5573571,
-    "xmax": 14969784, 
+    "xmax": 14969784,
     "ymax": 11347631,
-    "spatialReference": { "wkid": 54013 }
+    "spatialReference": {
+      "wkid": 54013
+    }
   });
   var whiteLine = new LineSymbol('solid', new Color([255, 255, 255, 1]), 2);
   var fill = new FillSymbol("solid", whiteLine, null);
   var popup = new Popup({
-      fillSymbol: fill,
-      titleInBody: false
+    fillSymbol: fill,
+    titleInBody: false
   }, domConstruct.create("div"));
   popup.anchor = 'top';
   //Add the light theme.
   domClass.add(popup.domNode, "light");
-  window.map = new Map('map', { extent: bounds, infoWindow: popup, logo: false });
-  map.addLayer(new Tiled(config.base));
-  map.addLayer(new Tiled(config.disputed));
+  window.map = new Map('map', {
+    basemap: 'who-eckert',
+    extent: bounds,
+    infoWindow: popup,
+    logo: false
+  });
   // Scale bar.
-  new Scalebar({ 
+  new Scalebar({
     attachTo: 'bottom-right',
-    map: map, 
+    map: map,
     scalebarStyle: 'line',
     scalebarUnit: 'metric'
   });
 
   // Add WHO disclaimer.
-  var attribution = document.getElementsByClassName('esriAttributionList')[0];
+  var attribution = document.getElementsByClassName('esriAttributionList')[
+    0];
   var shortDisclaimer = domConstruct.create('span');
-  var disclaimer = domConstruct.create('span', { 'class': 'who-disclaimer' });
-  var fullDisclaimer = domConstruct.create('span', { 'class': 'who-disclaimer-full hidden' });
+  var disclaimer = domConstruct.create('span', {
+    'class': 'who-disclaimer'
+  });
+  var fullDisclaimer = domConstruct.create('span', {
+    'class': 'who-disclaimer-full hidden'
+  });
   fullDisclaimer.innerHTML = config.whoDisclaimer;
   fullDisclaimer.addEventListener('click', function() {
     this.className = this.className + ' hidden';
@@ -60,31 +83,38 @@ require([
   disclaimer.innerHTML = config.whoDisclaimerShort;
   disclaimer.addEventListener('click', function() {
     fullDisclaimer.classList.remove('hidden');
-    fullDisclaimer.className = fullDisclaimer.className.replace(' hidden', '');
+    fullDisclaimer.className = fullDisclaimer.className.replace(
+      ' hidden', '');
   });
   shortDisclaimer.appendChild(disclaimer);
   attribution.appendChild(shortDisclaimer);
   document.body.appendChild(fullDisclaimer);
 
   // Styling info. These are a series of blues from WHO.
-  var colors = [
-    { 'hex': '#B7DDE7' },
-    { 'hex': '#94CDDB' },
-    { 'hex': '#96B4D6' },
-    { 'hex': '#1EB1ED' },
-    { 'hex': '#1072BD' },
-    { 'hex': '#19375C' }
-  ];
+  var colors = [{
+    'hex': '#B7DDE7'
+  }, {
+    'hex': '#94CDDB'
+  }, {
+    'hex': '#96B4D6'
+  }, {
+    'hex': '#1EB1ED'
+  }, {
+    'hex': '#1072BD'
+  }, {
+    'hex': '#19375C'
+  }];
+
   function getColor(d) {
     return colors[d].hex;
   }
 
   function fixAdviserMarkup(info) {
-    // National Pharmaceutical Adviser markup is not valid. 
+    // National Pharmaceutical Adviser markup is not valid.
     // Example:  <a href="mailto:mulumbaa@who.int" Dr Anastasie Mulumba</a>
     // Missing the closing '>' after the email address.
     // Fix by inserting missing '>' after the href value.
-    if ( info.indexOf('mailto') > -1 ) {
+    if (info.indexOf('mailto') > -1) {
       info = info.replace(config.pharmAdviserFix, function(a, b) {
         return b.replace(' ', '>');
       });
@@ -97,7 +127,8 @@ require([
     console.log('buildInfo props', props);
     var props = feature.attributes;
     var programInfo = '';
-    if ( props && props.hasOwnProperty(config.name) && props.hasOwnProperty(config.programAll) ) {
+    if (props && props.hasOwnProperty(config.name) && props.hasOwnProperty(
+        config.programAll)) {
       programInfo += fixAdviserMarkup(props[config.programAll]);
     } else {
       programInfo = '<h4>WHO Programmes:</h4>Click a country.';
@@ -117,46 +148,56 @@ require([
 
   // Legend
   function createLegend(info) {
-    var div = domConstruct.create('div', { 'class': 'legend' });
+    var div = domConstruct.create('div', {
+      'class': 'legend'
+    });
     div.innerHTML = '<div class="heading">Programme count by country</div>';
     var counts = [1, 2, 3, 4, 5];
     // Create swatches.
     for (var i = 0; i < counts.length; i++) {
-      div.innerHTML += '<i style="background:' + getColor(counts[i]) + '"></i>';
+      div.innerHTML += '<i style="background:' + getColor(counts[i]) +
+        '"></i>';
     }
     // Add swatch labels.
-    var labels = domConstruct.create('div', { 'class': 'swatch-labels' }, div);
+    var labels = domConstruct.create('div', {
+      'class': 'swatch-labels'
+    }, div);
     for (var j = 0; j < counts.length; j++) {
-      labels.innerHTML += '<span>' + (j+1) + '</span>';
+      labels.innerHTML += '<span>' + (j + 1) + '</span>';
     }
     // Add programs
-    var filters = domConstruct.create('div', { 'class': 'filters' }, div);
+    var filters = domConstruct.create('div', {
+      'class': 'filters'
+    }, div);
     filters.innerHTML = '<div class="heading">Show countries with:</div>';
-    for ( var k = 0; k < info.length; k++ ) {
+    for (var k = 0; k < info.length; k++) {
       var programId = programLookup[info[k]];
       // Add a separator above last entry, which is pharm adivser.
-      if ( k === (info.length - 1) ) {
+      if (k === (info.length - 1)) {
         filters.innerHTML += '<div class="program pharm-adviser">';
       } else {
         filters.innerHTML += '<div class="program">';
       }
-      filters.innerHTML += '<input type="checkbox" checked="checked" id="' + programId +
-        '"><label class="program" for="' + programId + '">' + info[k] + '</label></div>';
+      filters.innerHTML += '<input type="checkbox" checked="checked" id="' +
+        programId +
+        '"><label class="program" for="' + programId + '">' + info[k] +
+        '</label></div>';
     }
     filters.addEventListener('click', function(e) {
-      if ( e.target.id ) {
+      if (e.target.id) {
         var selected = getSelectedPrograms(e);
         console.log('selected', selected);
         map.getLayer('countries').graphics.forEach(function(g) {
           var props = g.attributes;
           var show = false;
-          for ( var i = 0; i < selected.length; i++ ) {
-            if ( props.hasOwnProperty(selected[i]) && props[selected[i]] ) {
+          for (var i = 0; i < selected.length; i++) {
+            if (props.hasOwnProperty(selected[i]) && props[selected[
+                i]]) {
               show = true;
               break;
             }
           }
-          if ( show ) {
+          if (show) {
             g.show();
           } else {
             g.hide();
@@ -172,14 +213,14 @@ require([
     // Loop through all features.
     features.forEach(function(f) {
       // Loop through all attributes.
-      for ( var p in f.attributes ) {
+      for (var p in f.attributes) {
         // Check if the current attribute has program info.
-        if ( config.programMatcher.test(p) ) {
+        if (config.programMatcher.test(p)) {
           var gram = f.attributes[p];
           // Check if this attribute corresponds to a program.
-          if ( gram ) {
+          if (gram) {
             // Create a list of unique programs and lookup object
-            if ( programsList.indexOf(gram) === -1 ) {
+            if (programsList.indexOf(gram) === -1) {
               programLookup['program' + programsList.length] = gram;
               programLookup[gram] = 'program' + programsList.length;
               programsList.push(gram);
@@ -187,7 +228,7 @@ require([
             // Add a new attribute to indicate this feature participates in a program.
             // This attribute is used when filtering (showing/hiding) features.
             var programId = programLookup[gram];
-            if ( programId ) {
+            if (programId) {
               f.attributes[programId] = true;
             }
           }
@@ -198,13 +239,13 @@ require([
     programsList.sort();
     // Move pharm adviser to the end of the list.
     var position = -1;
-    for ( var i = 0; i < programsList.length; i++ ) {
-      if ( programsList[i].indexOf("Adviser") > -1 ) {
+    for (var i = 0; i < programsList.length; i++) {
+      if (programsList[i].indexOf("Adviser") > -1) {
         position = i;
         break;
       }
     }
-    if ( position > -1 ) {
+    if (position > -1) {
       var a = programsList.splice(position, 1)[0];
       programsList.push(a);
     }
@@ -213,14 +254,17 @@ require([
   }
 
   function createGraphics(features) {
-    var gl = new GraphicsLayer({ id: 'countries' });
+    var gl = new GraphicsLayer({
+      id: 'countries'
+    });
     var white = new LineSymbol(whiteLine.toJson()).setWidth(1)
     var fill = new FillSymbol('solid', white, null);
     var infoTemplate = new InfoTemplate('${' + config.name + '}', buildInfo);
     features.forEach(function(f) {
       // create a graphic, add it to the map;
       var color = getColor(f.attributes[config.programCount]);
-      var symbol = new FillSymbol(fill.toJson()).setColor(new Color(color));
+      var symbol = new FillSymbol(fill.toJson()).setColor(new Color(
+        color));
       symbol = symbol.toJson();
       symbol.color[3] = 178; // .7 opacity
       symbol = new FillSymbol(symbol);
