@@ -43,8 +43,8 @@ require([
       "wkid": 54013
     }
   });
-  var whiteLine = new LineSymbol('solid', new Color([255, 255, 255, 1]), 2);
-  var fill = new FillSymbol("solid", whiteLine, null);
+  var boundary = new LineSymbol('solid', new Color("#fff"), 2);
+  var fill = new FillSymbol("solid", boundary, null);
   var popup = new Popup({
     fillSymbol: fill,
     titleInBody: false
@@ -257,8 +257,10 @@ require([
     var gl = new GraphicsLayer({
       id: 'countries'
     });
-    var white = new LineSymbol(whiteLine.toJson()).setWidth(1)
-    var fill = new FillSymbol('solid', white, null);
+    var outline = new LineSymbol(boundary.toJson())
+      .setColor(new Color('#CBBBC2'))
+      .setWidth(1);
+    var fill = new FillSymbol('solid', outline, null);
     var infoTemplate = new InfoTemplate('${' + config.name + '}', buildInfo);
     features.forEach(function(f) {
       // create a graphic, add it to the map;
@@ -266,7 +268,7 @@ require([
       var symbol = new FillSymbol(fill.toJson()).setColor(new Color(
         color));
       symbol = symbol.toJson();
-      symbol.color[3] = 178; // .7 opacity
+      // symbol.color[3] = 178; // .7 opacity
       symbol = new FillSymbol(symbol);
       f.setSymbol(symbol);
       f.setInfoTemplate(infoTemplate)

@@ -1,8 +1,8 @@
-* { 
+* {
   box-sizing: border-box;
 }
 html, body,  #map {
-  background: #E0E8FF;
+  background: #A9C5D0;
   height : 100%;
   margin: 0;
   padding: 0;
@@ -86,11 +86,11 @@ html, body,  #map {
   width: 90%;
 }
 .filters input[type=checkbox] {
-  display: inline-block; 
+  display: inline-block;
   margin: 4px 0 0 0;
   padding: 0;
   vertical-align: top;
-  width: 10%; 
+  width: 10%;
 }
 
 .esriAttributionList .who-disclaimer {
