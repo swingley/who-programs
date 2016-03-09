@@ -90,19 +90,17 @@ require([
   attribution.appendChild(shortDisclaimer);
   document.body.appendChild(fullDisclaimer);
 
-  // Styling info. These are a series of blues from WHO.
-  var colors = [{
-    'hex': '#B7DDE7'
+  // Yellow->Green ramp for number of programes per country.
+  var colors = [{}, {
+    'hex': '#FFFFBE'
   }, {
-    'hex': '#94CDDB'
+    'hex': '#D3FFBE'
   }, {
-    'hex': '#96B4D6'
+    'hex': '#89CD66'
   }, {
-    'hex': '#1EB1ED'
+    'hex': '#38A800'
   }, {
-    'hex': '#1072BD'
-  }, {
-    'hex': '#19375C'
+    'hex': '#266100'
   }];
 
   function getColor(d) {
@@ -165,6 +163,15 @@ require([
     for (var j = 0; j < counts.length; j++) {
       labels.innerHTML += '<span>' + (j + 1) + '</span>';
     }
+    // Add "Not applicable" swatch.
+    var na = domConstruct.create('div', {
+      'class': 'na-swatch',
+      'innerHTML': '<i style="background:#d2d2d2"></i><span>Not applicable</span>'
+    }, labels);
+    var nodata = domConstruct.create('div', {
+      'class': 'na-swatch',
+      'innerHTML': '<i style="background:#efebe0"></i><span>Data not available</span>'
+    }, labels)
     // Add programs
     var filters = domConstruct.create('div', {
       'class': 'filters'
