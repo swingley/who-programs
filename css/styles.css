@@ -112,10 +112,11 @@ html, body,  #map {
 }
 .legend .na-swatch {
   clear: left;
+  padding: 0.25em 0 0 0;
 }
 .legend .na-swatch span {
   width: auto;
-  padding: 0.25em 0 0 0.5em;
+  padding: 0em 0 0 0.5em;
 }
 
 /* esri style overrides */
