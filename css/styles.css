@@ -110,6 +110,13 @@ html, body,  #map {
   right: 0;
   z-index: 1001;
 }
+.legend .na-swatch {
+  clear: left;
+}
+.legend .na-swatch span {
+  width: auto;
+  padding: 0.25em 0 0 0.5em;
+}
 
 /* esri style overrides */
 .esriScaleBar {
