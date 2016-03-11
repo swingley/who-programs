@@ -164,14 +164,14 @@ require([
       labels.innerHTML += '<span>' + (j + 1) + '</span>';
     }
     // Add "Not applicable" swatch.
-    var na = domConstruct.create('div', {
-      'class': 'na-swatch',
-      'innerHTML': '<i style="background:#d2d2d2"></i><span>Not applicable</span>'
-    }, labels);
     var nodata = domConstruct.create('div', {
       'class': 'na-swatch',
       'innerHTML': '<i style="background:#efebe0"></i><span>Data not available</span>'
     }, labels)
+    var na = domConstruct.create('div', {
+      'class': 'na-swatch',
+      'innerHTML': '<i style="background:#d2d2d2"></i><span>Not applicable</span>'
+    }, labels);
     // Add programs
     var filters = domConstruct.create('div', {
       'class': 'filters'
