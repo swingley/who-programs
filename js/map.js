@@ -17,8 +17,7 @@ require([
   QueryTask, Query,
   dom, domConstruct, domClass
 ) {
-  var programs, programLookup = {},
-    highlight;
+  var programs, programLookup = {}, highlight;
 
   // Custom basemap using WHO services.
   // Using isReference: true puts service images/tiles on top of vector layers.
@@ -67,8 +66,7 @@ require([
   });
 
   // Add WHO disclaimer.
-  var attribution = document.getElementsByClassName('esriAttributionList')[
-    0];
+  var attribution = document.getElementsByClassName('esriAttributionList')[0];
   var shortDisclaimer = domConstruct.create('span');
   var disclaimer = domConstruct.create('span', {
     'class': 'who-disclaimer'
@@ -120,14 +118,25 @@ require([
     return info;
   }
 
+  function makeList(info) {
+    var parts = info.split('<br><br>');
+    var programs = parts[0];
+    programs = programs.split('<br>');
+    programs = _.map(programs, function(p) {
+      return '<li>' + p + '</li>';
+    });
+    programs = '<ul>' + programs.join('') + '</ul>';
+    return programs + parts[1];
+  }
+
   // Display feature info. Must be global as it is called from info template.
   window.buildInfo = function(feature) {
-    console.log('buildInfo props', props);
     var props = feature.attributes;
     var programInfo = '';
     if (props && props.hasOwnProperty(config.name) && props.hasOwnProperty(
         config.programAll)) {
       programInfo += fixAdviserMarkup(props[config.programAll]);
+      programInfo = makeList(programInfo);
     } else {
       programInfo = '<h4>WHO Programmes:</h4>Click a country.';
     }
@@ -294,7 +303,7 @@ require([
   query.outFields = ['*'];
   queryTask.execute(query).then(
     function(result) {
-      console.log('success', result);
+      // console.log('success', result);
       createProgramList(result.features);
       createGraphics(result.features);
     },

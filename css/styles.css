@@ -157,3 +157,7 @@ html, body,  #map {
   border-bottom-left-radius: 3px;
   border-bottom-right-radius: 3px;
 }
+
+.contentPane ul {
+  padding: 0 0 0 1.5em;
+}
